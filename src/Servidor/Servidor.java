@@ -3,10 +3,8 @@ package Servidor;
 import java.io.*;
 import java.net.*;
 
-import Comum.Conexao;
-import Comum.DentistaDTO;
-import Comum.MsgReq;
-import Comum.MsgResp;
+import Comum.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,10 +14,9 @@ public class Servidor {
     static Socket client_socket;
     static Conexao c;
     static String msg;
-    static List<DentistaDTO> dentistas;
+    static List<DentistaDTO> dentistas = new ArrayList<>();
 
     public Servidor() {
-        dentistas = new ArrayList<>();
         try {
             serversocket = new ServerSocket(9600);
             System.out.println("Criando o Server Socket");
@@ -28,112 +25,81 @@ public class Servidor {
         }
     }
 
-    public static void main(String args[]) {
-        int status;
-        float resultado;
-        MsgResp resposta =  new MsgResp();
-        
-        
-        Object requisicao = new Object();
+    public static void main(String args[]) throws Exception {
+        RequestEnt requisicao;
         new Servidor();
-        if (connect()) {
 
-            
+        while(true) {
+            if(connect()) {
+                requisicao = (RequestEnt) c.receive(client_socket);
 
-            requisicao = (Object) c.receive(client_socket);
-            
-            if(requisicao.getClass() == DentistaDTO.class) {
-                dentistas.add((DentistaDTO) requisicao);
-            }
-            
-            
-            
-            System.out.println(String.format("%s", requisicao.getClass()));
-//            System.out.println("OP1: " + requisicao.getOp1());
-//            System.out.println("Operação: " + requisicao.getOperacao());
-//            System.out.println("OP1: " + requisicao.getOp2());
-//
-//            char operacao =  requisicao.getOperacao();
-//            Float num1 = requisicao.getOp1();
-//            Float num2 = requisicao.getOp2();
-//            
-//            if (operacao == '+' || operacao == '-' || operacao == '*' || operacao == '/'){
-//
-//                if(operacao == '+'){
-//
-//                    resultado = num1 + num2;
-//                    status =  0;
-//                    resposta.setResultado(resultado);
-//                    resposta.setStatus(status);
-//                    }
-//    
-//                if(operacao == '-'){
-//    
-//                    resultado = num1 - num2;
-//                    status =  0;
-//                    resposta.setResultado(resultado);
-//                    resposta.setStatus(status);
-//                    
-//                }
-//                if(operacao == '/'){
-//    
-//                    if (num2 != 0){
-//                    
-//                    resultado = num1 / num2;
-//                    
-//                    status =  0;
-//                    resposta.setResultado(resultado);
-//                    resposta.setStatus(status);
-//                    
-//                    
-//                    }
-//    
-//                    else{
-//    
-//                        status = 2;
-//                        resultado = 0;
-//                        resposta.setResultado(resultado);
-//                        resposta.setStatus(status);
-//                        
-//    
-//                    }
-//                }
-//                if(operacao == '*'){
-//
-//                    resultado = num1 * num2;
-//                    status =  0;
-//                    resposta.setResultado(resultado);
-//                    resposta.setStatus(status);
-//                    
-//                }
-//             
-//            }
-//            else{
-//                status =  1;
-//                resultado = 0;
-//                resposta.setResultado(resultado);
-//                resposta.setStatus(status);
-//            }
-            
-            
+                if(requisicao.getMetodo() == MethodEnum.CRIAR) {
+                    dentistas.add((DentistaDTO) requisicao.getBody());
+                    ResponseEnt<DentistaDTO> resp = new ResponseEnt<>(StatusEnum.SUCESSO);
+                    c.send(client_socket, resp);
+                    for(DentistaDTO d: dentistas) {
+                        System.out.println(d.getMatricula());
+                    }
+                }
 
-            
-            c.send(client_socket, resposta);
+                if(requisicao.getMetodo() == MethodEnum.DELETAR) {
+                    int matricula = (int) requisicao.getBody();
+                    dentistas.removeIf(dentista -> dentista.getMatricula() == matricula);
+                    ResponseEnt<Boolean> response = new ResponseEnt<>(StatusEnum.SUCESSO);
+                    c.send(client_socket, response);
+                }
 
-            
+                if(requisicao.getMetodo() == MethodEnum.LOGIN_DENT) {
+                    int matricula = (int) requisicao.getBody();
+                    DentistaDTO resultado = dentistas.stream().filter(dentista -> dentista.getMatricula() == matricula).findFirst().orElse(null);
+                    ResponseEnt<Void> resp = new ResponseEnt<>(StatusEnum.ERRO);
+                    if(resultado != null) {
+                        resp.setStatus(StatusEnum.SUCESSO);
+                    }
+                    c.send(client_socket, resp);
+                }
 
+                if(requisicao.getMetodo() == MethodEnum.GET_DENTISTA) {
+                    int matricula = (int) requisicao.getBody();
+                    DentistaDTO resultado = dentistas.stream().filter(dentista -> dentista.getMatricula() == matricula).findFirst().orElse(null);
+                    ResponseEnt<DentistaDTO> resp = new ResponseEnt(resultado, StatusEnum.SUCESSO);
 
+                    c.send(client_socket, resp);
+                }
 
+                if(requisicao.getMetodo() == MethodEnum.AGENDAR) {
+                    Agendamento agendamento = (Agendamento) requisicao.getBody();
+                    DentistaDTO resultado = dentistas.stream().filter(dentista -> dentista.getMatricula() == agendamento.getMatriculaDentista()).findFirst().orElse(null);
+                    Horario reserva = new Horario(agendamento.getHora(), false);
+                    boolean reservado = resultado.reservarHorario(reserva);
+                    ResponseEnt<Boolean> resp = new ResponseEnt<>(reservado, StatusEnum.SUCESSO);
 
+                    c.send(client_socket, resp);
+                }
 
-            try {
-                client_socket.close();
-                serversocket.close();
-            } // desconexao
-            catch (Exception e) {
-                System.out.println("N�o encerrou a conex�o corretamente" + e.getMessage());
+                if(requisicao.getMetodo() == MethodEnum.CANCELAR) {
+                    Agendamento agendamento = (Agendamento) requisicao.getBody();
+                    DentistaDTO resultado = dentistas.stream().filter(dentista -> dentista.getMatricula() == agendamento.getMatriculaDentista()).findFirst().orElse(null);
+                    Horario reserva = new Horario(agendamento.getHora(), false);
+                    boolean cancelado = resultado.cancelarHorario(reserva);
+                    ResponseEnt<Boolean> resp = new ResponseEnt<>(cancelado, StatusEnum.SUCESSO);
+
+                    c.send(client_socket, resp);
+                }
+
             }
         }
+
+
+
+
+
+
+
+
+
+
+
     }
     
 

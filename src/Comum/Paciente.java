@@ -10,6 +10,10 @@ package Comum;
  * @author profslvo
  */
 public class Paciente {
+    public Paciente(String name) {
+        this.name = name;
+    }
+
     private String name;
 
     public String getName() {

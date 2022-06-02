@@ -5,11 +5,13 @@
  */
 package Comum;
 
+import java.io.Serializable;
+
 /**
  *
  * @author profslvo
  */
-public class Horario {
+public class Horario implements Serializable {
     private String hora;
     private boolean disponilidade;
     private Paciente paciente; 

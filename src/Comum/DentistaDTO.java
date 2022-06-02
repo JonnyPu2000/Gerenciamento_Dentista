@@ -7,7 +7,9 @@ package Comum;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *
@@ -21,6 +23,13 @@ public class DentistaDTO implements Serializable {
     public DentistaDTO(String nome, int matricula) {
         this.nome = nome;
         this.matricula = matricula;
+        this.horarios = new ArrayList<>();
+
+        List<String> horas = Arrays.asList("08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00");
+
+        for(String hora: horas) {
+            this.horarios.add(new Horario(hora, true));
+        }
     }
     
     
@@ -55,29 +64,31 @@ public class DentistaDTO implements Serializable {
         this.horarios.add(horario);
     } 
     
-    public boolean removerHorario(Horario horario) {
-        boolean existe = this.horarios.contains(horario);
-        
-        if(!existe) {
-            System.out.println("Horario inexistente!");
-            return false;
+    public boolean cancelarHorario(Horario horario) throws Exception {
+        Horario horarioExiste = this.horarios.stream().filter(h -> Objects.equals(h.getHora(), horario.getHora())).findFirst().orElse(null);
+
+        if(horarioExiste == null) {
+            throw new Exception("Horario inexistente");
         }
         
-        this.horarios.remove(horario);
+        horarioExiste.setDisponilidade(true);
         
         return true;
     }
     
     public boolean reservarHorario(Horario horario) throws Exception {
-        boolean horarioExiste = this.horarios.contains(horario);
-        if(!horarioExiste) {
+        Horario horarioExiste = this.horarios.stream().filter(h -> Objects.equals(h.getHora(), horario.getHora())).findFirst().orElse(null);
+
+        if(horarioExiste == null) {
             throw new Exception("Horario inexistente");
         }
-        int horarioIndex = this.horarios.indexOf(horario);
-        this.horarios.get(horarioIndex).setDisponilidade(false);
+
+        if(!horarioExiste.isDisponilidade()) {
+            throw new Exception("Horario indisponivel :(");
+        }
+        horarioExiste.setDisponilidade(false);
         
         System.out.println("Horario reservado com sucesso!");
         return true;
     }
-    
 }   
