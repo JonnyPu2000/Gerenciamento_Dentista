@@ -2,6 +2,8 @@ package Comum;
 
 import java.io.Serializable;
 
+
+//Classe para solicitação de Métodos
 public class RequestEnt<T> implements Serializable {
 
     public RequestEnt(MethodEnum metodo, T body) {

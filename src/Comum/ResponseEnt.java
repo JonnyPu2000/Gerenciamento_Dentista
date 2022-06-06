@@ -2,6 +2,7 @@ package Comum;
 
 import java.io.Serializable;
 
+//Classe de resposta, contem status e body da resposta
 public class ResponseEnt<T> implements Serializable {
     private T body;
     private StatusEnum status;

@@ -2,7 +2,11 @@ package Comum;
 
 import java.io.Serializable;
 
+//Classe de agendamento
+
 public class Agendamento implements Serializable {
+
+    //Recebe o horário e matrícula do dentista
     public Agendamento(String hora, int matriculaDentista) {
         this.hora = hora;
         this.matriculaDentista = matriculaDentista;

@@ -8,14 +8,19 @@ import Comum.*;
 import java.util.ArrayList;
 import java.util.List;
 
+
+//Classe Servidor 
 public class Servidor {
 
+    //Contém o socket do Server e do CLiente
     static ServerSocket serversocket;
     static Socket client_socket;
     static Conexao c;
     static String msg;
     static List<DentistaDTO> dentistas = new ArrayList<>();
 
+
+    //Aguarda Conexão com Cliente
     public Servidor() {
         try {
             serversocket = new ServerSocket(9600);
@@ -26,9 +31,12 @@ public class Servidor {
     }
 
     public static void main(String args[]) throws Exception {
+
+        //Recebe a request do Cliente
         RequestEnt requisicao;
         new Servidor();
 
+        //Loop para Realização das funções do sistema
         while(true) {
             if(connect()) {
                 requisicao = (RequestEnt) c.receive(client_socket);
